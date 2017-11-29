@@ -52,9 +52,7 @@
 #include <osgEarthFeatures/FeatureSource>
 #include <osgEarthFeatures/GeometryCompiler>
 #include <osgEarthFeatures/TransformFilter>
-#include <osgEarthFeatures/FilterContext>
 #include <osgEarthSymbology/MeshConsolidator>
-#include <osgEarthSymbology/StyleSheet>
 
 
 using namespace osgEarth;
@@ -674,6 +672,12 @@ AerodromeRenderer::apply(TerminalNode& node)
         styleSheet->addStyle( roofStyle );
 
         geom = defaultFeatureRenderer(feature.get(), buildingStyle, styleSheet.get());
+
+        //if ( node.icao() == "KSFO" )
+        //{
+        //    static int count = 0;
+        //    osgDB::writeNodeFile(*geom, Stringify() << "out" << count++ << ".osgt");
+        //}
     }
     else
     {

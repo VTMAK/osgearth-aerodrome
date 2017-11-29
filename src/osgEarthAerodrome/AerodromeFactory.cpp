@@ -38,7 +38,6 @@
 
 #include <osgEarthFeatures/Feature>
 #include <osgEarthFeatures/FeatureSource>
-#include <osgEarthFeatures/FeatureCursor>
 
 #include <osgEarth/Registry>
 
@@ -541,12 +540,11 @@ AerodromeFactory::seedAerodromes(AerodromeCatalog* catalog, const osgDB::Options
 
     // set up a spatial indexing tree
     HTMGroup* tree = new HTMGroup();
-    tree->setMaximumObjectsPerCell(4);
-    tree->setMaxRange( _lodRange );
-    tree->setStoreObjectsInLeavesOnly(true);
+    tree->setMaxLeaves( 4 );
+    tree->setMaxLeafRange( _lodRange );
     this->addChild( tree );
 
-    OE_INFO << LC << "Seeding aerodromes from boundaries." << std::endl;
+    OE_DEBUG << LC << "Seeding aerodromes from boundaries." << std::endl;
 
     int aeroCount = 0;
 

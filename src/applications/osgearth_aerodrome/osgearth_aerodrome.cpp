@@ -21,10 +21,9 @@
 #include <osgEarth/Notify>
 #include <osgEarthUtil/EarthManipulator>
 #include <osgEarthUtil/ExampleResources>
-#include <osgearthAerodrome/AerodromeFactory>
-#include <osgearthAerodrome/AerodromeRenderer>
+#include <osgEarthAerodrome/AerodromeFactory>
+#include <osgEarthAerodrome/AerodromeRenderer>
 #include <osgEarthFeatures/BuildGeometryFilter>
-#include <osgEarthFeatures/FilterContext>
 
 #define LC "[viewer] "
 
