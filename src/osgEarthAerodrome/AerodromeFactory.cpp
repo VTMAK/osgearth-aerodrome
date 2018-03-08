@@ -189,7 +189,7 @@ struct osgEarthAerodromeModelPseudoLoader : public osgDB::ReaderWriter
 REGISTER_OSGPLUGIN(osgearth_pseudo_amf, osgEarthAerodromeModelPseudoLoader);
 
 
-osg::ref_ptr<AerodromeRenderer> AerodromeFactory::s_renderer = 0L;
+AerodromeRenderer* AerodromeFactory::s_renderer = 0L;
 
 AerodromeFactory::AerodromeFactory(const Map* map, AerodromeCatalog* catalog, const osgDB::Options* options)
   : _map(map), _catalog(catalog), _lodRange(50000.0f)
@@ -212,7 +212,7 @@ AerodromeFactory::init(const osgDB::Options* options)
     //_dbOptions->setObjectCacheHint( osgDB::Options::CACHE_IMAGES );
 
     // create and initialize a renderer
-    _renderer = s_renderer.valid() ? (osgEarth::Aerodrome::AerodromeRenderer*)s_renderer : new AerodromeRenderer();
+    _renderer = s_renderer? (osgEarth::Aerodrome::AerodromeRenderer*)s_renderer : new AerodromeRenderer();
     _renderer->initialize(_map, _dbOptions);
 
     // setup the PagedLODs

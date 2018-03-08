@@ -75,7 +75,7 @@ namespace osgEarth { namespace Aerodrome
         static void processStopwayNode(StopwayNode* stopway, AerodromeNode* aerodrome);
 
 
-        static osg::ref_ptr<AerodromeRenderer> s_renderer;
+        static AerodromeRenderer* s_renderer;
 
         UID _uid;
         osg::ref_ptr<const Map> _map;
