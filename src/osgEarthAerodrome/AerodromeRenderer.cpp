@@ -52,7 +52,9 @@
 #include <osgEarthFeatures/FeatureSource>
 #include <osgEarthFeatures/GeometryCompiler>
 #include <osgEarthFeatures/TransformFilter>
+#include <osgEarthFeatures/FilterContext>
 #include <osgEarthSymbology/MeshConsolidator>
+#include <osgEarthSymbology/StyleSheet>
 
 
 using namespace osgEarth;
@@ -187,7 +189,7 @@ AerodromeRenderer::apply(LinearFeatureNode& node)
         }
 
         osg::ref_ptr<osg::Vec3Array> verts = new osg::Vec3Array();
-        transformAndLocalize( part->asVector(), feature->getSRS(), verts, 0L );
+        transformAndLocalize( part->asVector(), feature->getSRS(), verts.get(), 0L );
         for(int j=0; j<verts->size(); ++j)
             (*part)[j] = (*verts)[j];
     }
@@ -295,7 +297,7 @@ AerodromeRenderer::apply(RunwayNode& node)
 
         if (node.getOptions().textureOptions().isSet() && node.getOptions().textureOptions()->url().isSet())
         {
-            osg::Image* tex = node.getOptions().textureOptions()->url()->getImage(_dbOptions);
+            osg::Image* tex = node.getOptions().textureOptions()->url()->getImage(_dbOptions.get());
             if (tex)
             {
                 osg::Texture2D* _texture = new osg::Texture2D(tex);
@@ -439,7 +441,7 @@ AerodromeRenderer::apply(StopwayNode& node)
 
         if (node.getOptions().textureOptions().isSet() && node.getOptions().textureOptions()->url().isSet())
         {
-            osg::Image* tex = node.getOptions().textureOptions()->url()->getImage(_dbOptions);
+            osg::Image* tex = node.getOptions().textureOptions()->url()->getImage(_dbOptions.get());
             if (tex)
             {
                 osg::Texture2D* _texture = new osg::Texture2D(tex);
@@ -672,12 +674,6 @@ AerodromeRenderer::apply(TerminalNode& node)
         styleSheet->addStyle( roofStyle );
 
         geom = defaultFeatureRenderer(feature.get(), buildingStyle, styleSheet.get());
-
-        //if ( node.icao() == "KSFO" )
-        //{
-        //    static int count = 0;
-        //    osgDB::writeNodeFile(*geom, Stringify() << "out" << count++ << ".osgt");
-        //}
     }
     else
     {
@@ -987,7 +983,7 @@ AerodromeRenderer::featureSingleTextureRenderer(osgEarth::Features::Feature* fea
             geode->getDrawable(i)->asGeometry()->setColorBinding(osg::Geometry::BIND_OVERALL);
         }
 
-        osg::Image* tex = uri.getImage(_dbOptions);
+        osg::Image* tex = uri.getImage(_dbOptions.get());
         if (tex)
         {
             osg::Texture2D* _texture = new osg::Texture2D(tex);     
@@ -1105,7 +1101,7 @@ AerodromeRenderer::defaultFeatureRenderer(osgEarth::Features::Feature* feature, 
 
         GeometryCompiler compiler( go );
         osg::ref_ptr< Feature > clone = new Feature(*feature, osg::CopyOp::DEEP_COPY_ALL);
-        return compiler.compile( clone, (clone->style().isSet() ? *clone->style() : style), context );
+        return compiler.compile( clone.get(), (clone->style().isSet() ? *clone->style() : style), context );
     }
 
     return 0L;

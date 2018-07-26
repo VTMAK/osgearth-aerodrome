@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 2.8.3 FATAL_ERROR)
 set_property( GLOBAL PROPERTY USE_FOLDERS               ON )
 set_property( GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER "CMake Targets" )
 
-project(OSGEARTH_AERODROME)
+project(OSGEARTH_AERODROMES)
 
 set(OSGEARTH_AERODROME_MAJOR_VERSION 0)
 set(OSGEARTH_AERODROME_MINOR_VERSION 0)
@@ -43,8 +43,6 @@ if(UNIX)
     # Not sure what this will do on Cygwin and Msys
     # Also, remember OS X X11 is a user installed option so it may not exist.
     find_package(X11)
-    # Some Unicies need explicit linkage to the Math library or the build fails.
-    # find_package(MATH_LIBRARY m)
 endif(UNIX)
 
 # Visual Studio specific stuff.

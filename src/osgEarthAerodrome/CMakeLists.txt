@@ -14,6 +14,7 @@ set(LIB_PUBLIC_HEADERS
     AerodromeFactory
     AerodromeFeatureNode
     AerodromeFeatureOptions
+    AerodromeLayer
     AerodromeNode
     AerodromeRenderer
     BoundaryNode
@@ -36,6 +37,7 @@ set(LIB_PUBLIC_HEADERS
 set(LIB_COMMON_FILES
     AerodromeCatalog.cpp
     AerodromeFactory.cpp
+    AerodromeLayer.cpp
     AerodromeNode.cpp
     AerodromeRenderer.cpp
 )

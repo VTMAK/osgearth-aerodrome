@@ -38,6 +38,7 @@
 
 #include <osgEarthFeatures/Feature>
 #include <osgEarthFeatures/FeatureSource>
+#include <osgEarthFeatures/FeatureCursor>
 
 #include <osgEarth/Registry>
 
@@ -156,7 +157,12 @@ struct osgEarthAerodromeModelPseudoLoader : public osgDB::ReaderWriter
             Registry::instance()->endActivity(uri);
 
             if (node)
+            {
+                if (factory->getSceneGraphCallbacks())
+                    factory->getSceneGraphCallbacks()->firePreMergeNode(node);
+
                 return ReadResult(node);
+        }
         }
 
         return ReadResult::ERROR_IN_READING_FILE;
@@ -191,14 +197,21 @@ REGISTER_OSGPLUGIN(osgearth_pseudo_amf, osgEarthAerodromeModelPseudoLoader);
 
 osg::ref_ptr<AerodromeRenderer> AerodromeFactory::s_renderer = 0L;
 
-AerodromeFactory::AerodromeFactory(const Map* map, AerodromeCatalog* catalog, const osgDB::Options* options)
-  : _map(map), _catalog(catalog), _lodRange(50000.0f)
+AerodromeFactory::AerodromeFactory(const Map* map, 
+                                   AerodromeCatalog* catalog,
+                                   SceneGraphCallbacks* callbacks,
+                                   const osgDB::Options* options)
+  : _map(map), _catalog(catalog), _sceneGraphCallbacks(callbacks), _lodRange(50000.0f)
 {
     init(options);
 }
 
-AerodromeFactory::AerodromeFactory(const Map* map, AerodromeCatalog* catalog, float lodRange, const osgDB::Options* options)
-  : _map(map), _catalog(catalog), _lodRange(lodRange)
+AerodromeFactory::AerodromeFactory(const Map* map, 
+                                   AerodromeCatalog* catalog,
+                                   float lodRange,                                    
+                                   SceneGraphCallbacks* callbacks,
+                                   const osgDB::Options* options)
+  : _map(map), _catalog(catalog), _sceneGraphCallbacks(callbacks), _lodRange(lodRange)
 {
     init(options);
 }
@@ -208,15 +221,15 @@ AerodromeFactory::init(const osgDB::Options* options)
 {
     _uid = osgEarthAerodromeModelPseudoLoader::registerFactory( this );
 
-    _dbOptions = new osgDB::Options( *options );
+    _dbOptions = options; //new osgDB::Options( *options );
     //_dbOptions->setObjectCacheHint( osgDB::Options::CACHE_IMAGES );
 
     // create and initialize a renderer
-    _renderer = s_renderer.valid() ? (osgEarth::Aerodrome::AerodromeRenderer*)s_renderer : new AerodromeRenderer();
-    _renderer->initialize(_map, _dbOptions);
+    _renderer = s_renderer.valid() ? (osgEarth::Aerodrome::AerodromeRenderer*)s_renderer.get() : new AerodromeRenderer();
+    _renderer->initialize(_map.get(), _dbOptions.get());
 
     // setup the PagedLODs
-    seedAerodromes(_catalog, _dbOptions);
+    seedAerodromes(_catalog.get(), _dbOptions.get());
 }
 
 AerodromeFactory::~AerodromeFactory()
@@ -271,7 +284,7 @@ void AerodromeFactory::createFeatureNodes(P featureOpts, AerodromeNode* aerodrom
         /* **************************************** */
         /* Necessary but not sure why               */
 
-        const SpatialReference* ecefSRS = f->getSRS()->getGeographicSRS()->getECEF();
+        const SpatialReference* ecefSRS = f->getSRS()->getGeographicSRS();
 
         /* **************************************** */
 
@@ -346,7 +359,7 @@ void AerodromeFactory::createMergedFeatureNodes(P featureOpts, AerodromeNode* ae
         /* **************************************** */
         /* Necessary but not sure why               */
 
-        const SpatialReference* ecefSRS = f->getSRS()->getGeographicSRS()->getECEF();
+        const SpatialReference* ecefSRS = f->getSRS()->getGeographicSRS();
 
         /* **************************************** */
 
@@ -412,7 +425,7 @@ void AerodromeFactory::createBoundaryNodes(BoundaryFeatureOptions boundaryOpts, 
         /* **************************************** */
         /* Necessary but not sure why               */
 
-        const SpatialReference* ecefSRS = f->getSRS()->getGeographicSRS()->getECEF();
+        const SpatialReference* ecefSRS = f->getSRS()->getGeographicSRS();
 
         /* **************************************** */
 
@@ -454,43 +467,43 @@ AerodromeFactory::createAerodrome(AerodromeCatalog* catalog, const std::string& 
     osg::ref_ptr<AerodromeNode> aerodrome = new AerodromeNode(icao);
 
     for(BoundaryOptionsSet::const_iterator i = catalog->boundaryOptions().begin(); i != catalog->boundaryOptions().end(); ++i)
-        AerodromeFactory::createBoundaryNodes(*i, aerodrome, options);
+        AerodromeFactory::createBoundaryNodes(*i, aerodrome.get(), options);
     
     for(AerodromeOptionsSet::const_iterator i = catalog->pavementOptions().begin(); i != catalog->pavementOptions().end(); ++i)
-        AerodromeFactory::createMergedFeatureNodes<PavementNode, PavementGroup, AerodromeFeatureOptions>(*i, aerodrome, options);
+        AerodromeFactory::createMergedFeatureNodes<PavementNode, PavementGroup, AerodromeFeatureOptions>(*i, aerodrome.get(), options);
     
     for(AerodromeOptionsSet::const_iterator i = catalog->taxiwayOptions().begin(); i != catalog->taxiwayOptions().end(); ++i)
-        AerodromeFactory::createMergedFeatureNodes<TaxiwayNode, TaxiwayGroup, AerodromeFeatureOptions>(*i, aerodrome, options);
+        AerodromeFactory::createMergedFeatureNodes<TaxiwayNode, TaxiwayGroup, AerodromeFeatureOptions>(*i, aerodrome.get(), options);
 
     for(AerodromeOptionsSet::const_iterator i = catalog->runwayOptions().begin(); i != catalog->runwayOptions().end(); ++i)
-        AerodromeFactory::createFeatureNodes<RunwayNode, RunwayGroup, AerodromeFeatureOptions>(*i, aerodrome, options);
+        AerodromeFactory::createFeatureNodes<RunwayNode, RunwayGroup, AerodromeFeatureOptions>(*i, aerodrome.get(), options);
 
     for(AerodromeOptionsSet::const_iterator i = catalog->runwayThresholdOptions().begin(); i != catalog->runwayThresholdOptions().end(); ++i)
-        AerodromeFactory::createFeatureNodes<RunwayThresholdNode, RunwayThresholdGroup, AerodromeFeatureOptions>(*i, aerodrome, options);
+        AerodromeFactory::createFeatureNodes<RunwayThresholdNode, RunwayThresholdGroup, AerodromeFeatureOptions>(*i, aerodrome.get(), options);
 
     for(AerodromeOptionsSet::const_iterator i = catalog->stopwayOptions().begin(); i != catalog->stopwayOptions().end(); ++i)
-        AerodromeFactory::createFeatureNodes<StopwayNode, StopwayGroup, AerodromeFeatureOptions>(*i, aerodrome, options, &AerodromeFactory::processStopwayNode);
+        AerodromeFactory::createFeatureNodes<StopwayNode, StopwayGroup, AerodromeFeatureOptions>(*i, aerodrome.get(), options, &AerodromeFactory::processStopwayNode);
 
     for(AerodromeOptionsSet::const_iterator i = catalog->linearFeatureOptions().begin(); i != catalog->linearFeatureOptions().end(); ++i)
-        AerodromeFactory::createMergedFeatureNodes<LinearFeatureNode, LinearFeatureGroup, AerodromeFeatureOptions>(*i, aerodrome, options);
+        AerodromeFactory::createMergedFeatureNodes<LinearFeatureNode, LinearFeatureGroup, AerodromeFeatureOptions>(*i, aerodrome.get(), options);
 
     for(AerodromeOptionsSet::const_iterator i = catalog->startupLocationOptions().begin(); i != catalog->startupLocationOptions().end(); ++i)
-        AerodromeFactory::createFeatureNodes<StartupLocationNode, StartupLocationGroup, AerodromeFeatureOptions>(*i, aerodrome, options);
+        AerodromeFactory::createFeatureNodes<StartupLocationNode, StartupLocationGroup, AerodromeFeatureOptions>(*i, aerodrome.get(), options);
 
     for(AerodromeOptionsSet::const_iterator i = catalog->lightBeaconOptions().begin(); i != catalog->lightBeaconOptions().end(); ++i)
-        AerodromeFactory::createFeatureNodes<LightBeaconNode, LightBeaconGroup, AerodromeFeatureOptions>(*i, aerodrome, options);
+        AerodromeFactory::createFeatureNodes<LightBeaconNode, LightBeaconGroup, AerodromeFeatureOptions>(*i, aerodrome.get(), options);
 
     for(AerodromeOptionsSet::const_iterator i = catalog->lightIndicatorOptions().begin(); i != catalog->lightIndicatorOptions().end(); ++i)
-         AerodromeFactory::createFeatureNodes<LightIndicatorNode, LightIndicatorGroup, AerodromeFeatureOptions>(*i, aerodrome, options);
+         AerodromeFactory::createFeatureNodes<LightIndicatorNode, LightIndicatorGroup, AerodromeFeatureOptions>(*i, aerodrome.get(), options);
 
     for(AerodromeOptionsSet::const_iterator i = catalog->taxiwaySignOptions().begin(); i != catalog->taxiwaySignOptions().end(); ++i)
-        AerodromeFactory::createFeatureNodes<TaxiwaySignNode, TaxiwaySignGroup, AerodromeFeatureOptions>(*i, aerodrome, options);
+        AerodromeFactory::createFeatureNodes<TaxiwaySignNode, TaxiwaySignGroup, AerodromeFeatureOptions>(*i, aerodrome.get(), options);
 
     for(AerodromeOptionsSet::const_iterator i = catalog->windsockOptions().begin(); i != catalog->windsockOptions().end(); ++i)
-        AerodromeFactory::createFeatureNodes<WindsockNode, WindsockGroup, AerodromeFeatureOptions>(*i, aerodrome, options);
+        AerodromeFactory::createFeatureNodes<WindsockNode, WindsockGroup, AerodromeFeatureOptions>(*i, aerodrome.get(), options);
 
     for(TerminalOptionsSet::const_iterator i = catalog->terminalOptions().begin(); i != catalog->terminalOptions().end(); ++i)
-        AerodromeFactory::createFeatureNodes<TerminalNode, TerminalGroup, TerminalFeatureOptions>(*i, aerodrome, options);
+        AerodromeFactory::createFeatureNodes<TerminalNode, TerminalGroup, TerminalFeatureOptions>(*i, aerodrome.get(), options);
 
     return aerodrome.release();
 }
@@ -506,7 +519,7 @@ AerodromeNode* AerodromeFactory::getAerodromeNode(const std::string& icao)
 
     // create AerodromeNode
     OE_START_TIMER(create);
-    osg::ref_ptr<AerodromeNode> node = createAerodrome(_catalog, icao, _dbOptions);
+    osg::ref_ptr<AerodromeNode> node = createAerodrome(_catalog.get(), icao, _dbOptions.get());
     float createTime = OE_STOP_TIMER(create);
 
     // render
@@ -516,7 +529,7 @@ AerodromeNode* AerodromeFactory::getAerodromeNode(const std::string& icao)
 
     // Generate shaders (using a cache)
     osg::ref_ptr<osgEarth::StateSetCache> cache = new osgEarth::StateSetCache();
-    osgEarth::Registry::shaderGenerator().run( node, "Aerodrome", cache.get() );
+    osgEarth::Registry::shaderGenerator().run( node.get(), "Aerodrome", cache.get() );
     float renderTime = OE_STOP_TIMER(render);
 
     float s = OE_STOP_TIMER(getAerodromeNode);
@@ -542,9 +555,10 @@ AerodromeFactory::seedAerodromes(AerodromeCatalog* catalog, const osgDB::Options
     HTMGroup* tree = new HTMGroup();
     tree->setMaxLeaves( 4 );
     tree->setMaxLeafRange( _lodRange );
+    //tree->setStoreObjectsInLeavesOnly(true);
     this->addChild( tree );
 
-    OE_DEBUG << LC << "Seeding aerodromes from boundaries." << std::endl;
+    OE_INFO << LC << "Seeding aerodromes from boundaries." << std::endl;
 
     int aeroCount = 0;
 
@@ -584,7 +598,10 @@ AerodromeFactory::seedAerodromes(AerodromeCatalog* catalog, const osgDB::Options
 
                 if (f->getGeometry())
                 {
-                    osg::PagedLOD* p = new osg::PagedLOD();
+                    osg::PagedLOD* p = _sceneGraphCallbacks.valid() ? 
+                        new PagedLODWithSceneGraphCallbacks(_sceneGraphCallbacks.get()) :
+                        new osg::PagedLOD();
+
                     p->setFileName(0, uri);
 
                     GeoPoint gp(f->getSRS(), f->getGeometry()->getBounds().center());
