@@ -409,6 +409,12 @@ AerodromeRenderer::apply(StartupLocationNode& node)
 void
 AerodromeRenderer::apply(StopwayNode& node)
 {
+   osg::ref_ptr<const Map> refMap;
+   if (!_map.lock(refMap))
+   {
+      return;
+   }
+   
     osg::ref_ptr<osgEarth::Features::Feature> feature = node.getFeature();
 
     osg::ref_ptr<osg::Node> geom;
@@ -454,7 +460,7 @@ AerodromeRenderer::apply(StopwayNode& node)
 
                 osg::Vec2Array* tcoords = new osg::Vec2Array(4);
 
-                osg::Vec3d refPoint = transformAndLocalize(node.getReferencePoint(), _map->getSRS());
+                osg::Vec3d refPoint = transformAndLocalize(node.getReferencePoint(), refMap->getSRS());
 
                 float side1 = (refPoint - (((*verts)[1] + (*verts)[0]) / 2.0)).length();
                 float side2 = (refPoint - (((*verts)[2] + (*verts)[1]) / 2.0)).length();
@@ -1085,9 +1091,8 @@ AerodromeRenderer::defaultFeatureRenderer(osgEarth::Features::Feature* feature, 
 osg::Node*
 AerodromeRenderer::defaultFeatureRenderer(osgEarth::Features::Feature* feature, const Style& style, StyleSheet* styleSheet)
 {
-    if (feature && _map.valid())
+    if (feature)
     {
-        //Session* session = new Session( _map.get() );
         if (styleSheet)
             _session->setStyles(styleSheet);
 
@@ -1110,34 +1115,38 @@ AerodromeRenderer::defaultFeatureRenderer(osgEarth::Features::Feature* feature, 
 void
 AerodromeRenderer::createLocalizations(const osgEarth::Bounds& bounds, BoundaryNode* boundary)
 {
-    // use the center of the bounds as an anchor for localization
-    GeoPoint anchor(boundary->getFeature()->getSRS(), bounds.center().x(), bounds.center().y());
-    anchor = anchor.transform(_map->getSRS());
+   osg::ref_ptr<const Map> refMap;
+   if (_map.lock(refMap))
+   {
+      // use the center of the bounds as an anchor for localization
+      GeoPoint anchor(boundary->getFeature()->getSRS(), bounds.center().x(), bounds.center().y());
+      anchor = anchor.transform(refMap->getSRS());
 
-    // get a common elevation for the aerodrome
-    if (boundary && boundary->hasElevation())
-    {
-        _elevation = boundary->elevation();
-    }
-    else
-    {
-        ElevationQuery eq(_map.get());
-        eq.getElevation(anchor, _elevation);
-        OE_WARN << LC << "No elevation data in boundary; using an elevation query" << std::endl;
-    }
+      // get a common elevation for the aerodrome
+      if (boundary && boundary->hasElevation())
+      {
+         _elevation = boundary->elevation();
+      }
+      else
+      {
+         ElevationQuery eq(refMap.get());
+         eq.getElevation(anchor, _elevation);
+         OE_WARN << LC << "No elevation data in boundary; using an elevation query" << std::endl;
+      }
 
-    // create a w2l matrix for the aerodrome
-    GeoPoint p(anchor.getSRS(), anchor.x(), anchor.y(), _elevation, ALTMODE_ABSOLUTE);
-    p.createLocalToWorld(_local2world);
-    _world2local.invert(_local2world);
+      // create a w2l matrix for the aerodrome
+      GeoPoint p(anchor.getSRS(), anchor.x(), anchor.y(), _elevation, ALTMODE_ABSOLUTE);
+      p.createLocalToWorld(_local2world);
+      _world2local.invert(_local2world);
 
-    // find the local min point (lower-left), used for calculating site-wide texture coords
-    GeoPoint vert(boundary->getFeature()->getSRS(), osg::Vec3d(bounds.xMin(), bounds.yMin(), _elevation), osgEarth::ALTMODE_ABSOLUTE);
+      // find the local min point (lower-left), used for calculating site-wide texture coords
+      GeoPoint vert(boundary->getFeature()->getSRS(), osg::Vec3d(bounds.xMin(), bounds.yMin(), _elevation), osgEarth::ALTMODE_ABSOLUTE);
 
-    osg::Vec3d world;
-    vert.toWorld(world);
-    _localMin = world * _world2local;
-    _localMin.z() = 0.0;
+      osg::Vec3d world;
+      vert.toWorld(world);
+      _localMin = world * _world2local;
+      _localMin.z() = 0.0;
+   }
 }
 
 void

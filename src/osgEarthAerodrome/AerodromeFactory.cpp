@@ -549,6 +549,11 @@ AerodromeFactory::setDefaultRenderer(AerodromeRenderer* renderer)
 void
 AerodromeFactory::seedAerodromes(AerodromeCatalog* catalog, const osgDB::Options* options)
 {
+    osg::ref_ptr<const Map> refMap;
+    if (_map.lock(refMap)==false)
+    {
+        return;
+    }
     removeChildren(0, getNumChildren());
 
     // set up a spatial indexing tree
@@ -605,7 +610,7 @@ AerodromeFactory::seedAerodromes(AerodromeCatalog* catalog, const osgDB::Options
                     p->setFileName(0, uri);
 
                     GeoPoint gp(f->getSRS(), f->getGeometry()->getBounds().center());
-                    gp = gp.transform(_map->getSRS());
+                    gp = gp.transform(refMap->getSRS());
                     osg::Vec3d center;
                     gp.toWorld(center);
                     p->setCenter(center);

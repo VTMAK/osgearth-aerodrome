@@ -81,7 +81,7 @@ namespace osgEarth { namespace Aerodrome
         static osg::ref_ptr<AerodromeRenderer> s_renderer;
 
         UID _uid;
-        osg::ref_ptr<const Map> _map;
+        osg::observer_ptr<const Map> _map;
         osg::ref_ptr<AerodromeCatalog> _catalog;
         osg::ref_ptr<const osgDB::Options> _dbOptions;
         osg::ref_ptr<AerodromeRenderer> _renderer;
