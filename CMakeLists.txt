@@ -31,7 +31,8 @@ set(OSGEARTH_AERODROME_SONAMES TRUE)
 
 # We have some custom .cmake scripts not in the official distribution.
 # Maybe this can be used override existing behavior if needed?
-set(CMAKE_MODULE_PATH "${OSGEARTH_AERODROME_SOURCE_DIR}/CMakeModules;${CMAKE_MODULE_PATH}")
+SET(CMAKE_MODULE_PATH "${OSGEARTH_AERODROMES_SOURCE_DIR}/CMakeModules;${CMAKE_MODULE_PATH}")
+MESSAGE(STATUS "${CMAKE_MODULE_PATH}")
 
 # Find our dependencies
 find_package(OpenGL)
@@ -47,6 +48,11 @@ endif(UNIX)
 
 # Visual Studio specific stuff.
 if(WIN32)
+    FIND_PACKAGE(GLCORE)
+    IF(GLCORE_FOUND)
+      INCLUDE_DIRECTORIES( ${GLCORE_INCLUDE_DIR} )
+    ENDIF() 
+    
     if(MSVC)
         # Some MSVC-specific compilation flags
         ADD_DEFINITIONS(-D_SCL_SECURE_NO_WARNINGS)
