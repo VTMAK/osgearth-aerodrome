@@ -164,7 +164,6 @@ struct osgEarthAerodromeModelPseudoLoader : public osgDB::ReaderWriter
                 return ReadResult(node);
             }
         }
-        }
 
         return ReadResult::ERROR_IN_READING_FILE;
     }
@@ -559,9 +558,12 @@ AerodromeFactory::seedAerodromes(AerodromeCatalog* catalog, const osgDB::Options
 
     // set up a spatial indexing tree
     HTMGroup* tree = new HTMGroup();
-    tree->setMaxLeaves( 4 );
-    tree->setMaxLeafRange( _lodRange );
+    tree->setMaximumObjectsPerCell(4);
+    tree->setMaxRange(_lodRange);
+    // MERGE: This was commented in orig, put in with 2.10.2 merge
+    // I am leaving this commented out
     //tree->setStoreObjectsInLeavesOnly(true);
+
     this->addChild( tree );
 
     OE_INFO << LC << "Seeding aerodromes from boundaries." << std::endl;
