@@ -45,7 +45,9 @@ if(UNIX)
     # Also, remember OS X X11 is a user installed option so it may not exist.
     find_package(X11)
     # Some Unicies need explicit linkage to the Math library or the build fails.
-    find_package(MATH_LIBRARY m)
+# VRV Begin Patch - this causes a build error on Linux
+#    find_package(MATH_LIBRARY m)
+# VRV End Path
 endif(UNIX)
 
 # Visual Studio specific stuff.
