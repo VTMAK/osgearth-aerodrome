@@ -5,7 +5,7 @@ ELSE (DYNAMIC_OSGEARTH)
 ENDIF(DYNAMIC_OSGEARTH)
 
 
-set(LIB_NAME osgEarthAerodrome)
+set(LIB_NAME osgEarthAerodromes)
 
 set(HEADER_PATH ${OSGEARTH_SOURCE_DIR}/include/${LIB_NAME})
 

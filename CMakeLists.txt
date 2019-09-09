@@ -31,7 +31,8 @@ set(OSGEARTH_AERODROME_SONAMES TRUE)
 
 # We have some custom .cmake scripts not in the official distribution.
 # Maybe this can be used override existing behavior if needed?
-set(CMAKE_MODULE_PATH "${OSGEARTH_AERODROME_SOURCE_DIR}/CMakeModules;${CMAKE_MODULE_PATH}")
+SET(CMAKE_MODULE_PATH "${OSGEARTH_AERODROMES_SOURCE_DIR}/CMakeModules;${CMAKE_MODULE_PATH}")
+MESSAGE(STATUS "${CMAKE_MODULE_PATH}")
 
 # Find our dependencies
 find_package(OpenGL)
@@ -43,10 +44,19 @@ if(UNIX)
     # Not sure what this will do on Cygwin and Msys
     # Also, remember OS X X11 is a user installed option so it may not exist.
     find_package(X11)
+    # Some Unicies need explicit linkage to the Math library or the build fails.
+# VRV Begin Patch - this causes a build error on Linux
+#    find_package(MATH_LIBRARY m)
+# VRV End Path
 endif(UNIX)
 
 # Visual Studio specific stuff.
 if(WIN32)
+    FIND_PACKAGE(GLCORE)
+    IF(GLCORE_FOUND)
+      INCLUDE_DIRECTORIES( ${GLCORE_INCLUDE_DIR} )
+    ENDIF() 
+    
     if(MSVC)
         # Some MSVC-specific compilation flags
         ADD_DEFINITIONS(-D_SCL_SECURE_NO_WARNINGS)

@@ -162,7 +162,7 @@ struct osgEarthAerodromeModelPseudoLoader : public osgDB::ReaderWriter
                     factory->getSceneGraphCallbacks()->firePreMergeNode(node);
 
                 return ReadResult(node);
-        }
+            }
         }
 
         return ReadResult::ERROR_IN_READING_FILE;
@@ -276,7 +276,7 @@ void AerodromeFactory::createFeatureNodes(P featureOpts, AerodromeNode* aerodrom
     Query query;
     query.expression() = s_makeQuery(featureOpts.icaoAttr().value(), aerodrome->icao());
 
-    osg::ref_ptr<FeatureCursor> cursor = featureSource->createFeatureCursor(query);
+    osg::ref_ptr<FeatureCursor> cursor = featureSource->createFeatureCursor(query, 0L);
     while ( cursor.valid() && cursor->hasMore() )
     {
         Feature* f = cursor->nextFeature();
@@ -284,7 +284,7 @@ void AerodromeFactory::createFeatureNodes(P featureOpts, AerodromeNode* aerodrom
         /* **************************************** */
         /* Necessary but not sure why               */
 
-        const SpatialReference* ecefSRS = f->getSRS()->getGeographicSRS();
+        const SpatialReference* ecefSRS = f->getSRS()->getGeocentricSRS();
 
         /* **************************************** */
 
@@ -351,7 +351,7 @@ void AerodromeFactory::createMergedFeatureNodes(P featureOpts, AerodromeNode* ae
 
     osg::ref_ptr<Feature> newFeature = 0L;
 
-    osg::ref_ptr<FeatureCursor> cursor = featureSource->createFeatureCursor(query);
+    osg::ref_ptr<FeatureCursor> cursor = featureSource->createFeatureCursor(query, 0L);
     while ( cursor.valid() && cursor->hasMore() )
     {
         Feature* f = cursor->nextFeature();
@@ -359,7 +359,7 @@ void AerodromeFactory::createMergedFeatureNodes(P featureOpts, AerodromeNode* ae
         /* **************************************** */
         /* Necessary but not sure why               */
 
-        const SpatialReference* ecefSRS = f->getSRS()->getGeographicSRS();
+        const SpatialReference* ecefSRS = f->getSRS()->getGeocentricSRS();
 
         /* **************************************** */
 
@@ -417,7 +417,7 @@ void AerodromeFactory::createBoundaryNodes(BoundaryFeatureOptions boundaryOpts, 
     Query query;
     query.expression() = s_makeQuery(boundaryOpts.icaoAttr().value(), aerodrome->icao());
 
-    osg::ref_ptr<FeatureCursor> cursor = featureSource->createFeatureCursor(query);
+    osg::ref_ptr<FeatureCursor> cursor = featureSource->createFeatureCursor(query, 0L);
     while ( cursor.valid() && cursor->hasMore() )
     {
         Feature* f = cursor->nextFeature();
@@ -425,7 +425,7 @@ void AerodromeFactory::createBoundaryNodes(BoundaryFeatureOptions boundaryOpts, 
         /* **************************************** */
         /* Necessary but not sure why               */
 
-        const SpatialReference* ecefSRS = f->getSRS()->getGeographicSRS();
+        const SpatialReference* ecefSRS = f->getSRS()->getGeocentricSRS();
 
         /* **************************************** */
 
@@ -558,9 +558,12 @@ AerodromeFactory::seedAerodromes(AerodromeCatalog* catalog, const osgDB::Options
 
     // set up a spatial indexing tree
     HTMGroup* tree = new HTMGroup();
-    tree->setMaxLeaves( 4 );
-    tree->setMaxLeafRange( _lodRange );
+    tree->setMaximumObjectsPerCell(4);
+    tree->setMaxRange(_lodRange);
+    // MERGE: This was commented in orig, put in with 2.10.2 merge
+    // I am leaving this commented out
     //tree->setStoreObjectsInLeavesOnly(true);
+
     this->addChild( tree );
 
     OE_INFO << LC << "Seeding aerodromes from boundaries." << std::endl;
@@ -589,7 +592,7 @@ AerodromeFactory::seedAerodromes(AerodromeCatalog* catalog, const osgDB::Options
             continue;
         }
 
-        osg::ref_ptr<FeatureCursor> cursor = featureSource->createFeatureCursor();
+        osg::ref_ptr<FeatureCursor> cursor = featureSource->createFeatureCursor(0L);
         while ( cursor.valid() && cursor->hasMore() )
         {
             Feature* f = cursor->nextFeature();
